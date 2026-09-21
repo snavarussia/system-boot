@@ -237,3 +237,154 @@ vgs
 ```
 
 Пример:
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/0bb2b1bd-6257-4f47-bbdf-5f8f51cbc826" />
+
+Нас интересует имя **Volume Group (VG)**:
+
+```text
+centos
+```
+
+Переименуем его:
+
+```bash
+vgrename centos testing
+```
+
+Ожидаемый результат:
+
+```text
+Volume group "centos" successfully renamed to "testing"
+```
+
+Проверяем:
+
+```bash
+vgs
+```
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/eb7ac1dd-831c-4cad-89b8-216d64938300" />
+
+---
+
+# Что такое LVM
+
+**LVM (Logical Volume Manager)** — механизм управления дисковым пространством в Linux.
+
+Основные элементы LVM:
+
+```text
+Physical Volume (PV)
+        │
+        ▼
+Volume Group (VG)
+        │
+        ├── Logical Volume (LV)
+        └── Logical Volume (LV)
+```
+
+В рассматриваемом примере:
+
+```text
+PV → centos → LV
+```
+
+после переименования:
+
+```text
+PV → testing → LV
+```
+
+Изменение имени VG важно учитывать во всех местах, где старое имя используется для поиска корневой файловой системы.
+
+---
+
+# Пересоздание initrd после изменения LVM
+
+После переименования Volume Group необходимо проверить конфигурацию системы и заменить старое имя VG на новое там, где оно используется для загрузки и монтирования корневой файловой системы.
+
+В данной конфигурации CentOS 7 используется загрузка **UEFI**, поэтому конфигурация GRUB находится в:
+
+```text
+/boot/efi/EFI/centos/grub.cfg
+```
+
+Необходимо проверить следующие файлы:
+
+```text
+/etc/fstab
+/etc/default/grub
+/boot/efi/EFI/centos/grub.cfg
+```
+
+Например, если VG был переименован:
+
+```text
+centos → testing
+```
+
+то ссылки на старое имя необходимо заменить на новое:
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/5bd3489a-82e7-4bc7-bc8f-c8d343a2bcec" />
+
+Особое внимание следует обратить на параметры `rd.lvm.lv` в конфигурации GRUB. Например:
+
+```text
+rd.lvm.lv=centos/root
+```
+
+после переименования VG должен указывать на новое имя:
+
+```text
+rd.lvm.lv=testing/root
+```
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/2e52a98d-1003-41b3-bde2-c4b0b095a796" />
+
+После изменения конфигурации необходимо пересоздать образ `initramfs`, чтобы он содержал актуальную информацию, необходимую для обнаружения и активации LVM при загрузке системы:
+
+```bash
+mkinitrd -f -v /boot/initramfs-$(uname -r).img $(uname -r)
+```
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/4bb636b3-e6c3-4590-82a1-6d426faa57bd" />
+
+После этого можно перезагрузить систему и проверить:
+
+```bash
+vgs
+```
+
+При необходимости аналогичным образом можно изменить название **Logical Volume (LV)**.
+
+---
+
+### Почему необходимо обновлять и GRUB, и initramfs
+
+При загрузке используются несколько последовательных компонентов:
+
+```text
+GRUB
+  │
+  │ параметры ядра, включая rd.lvm.lv
+  ▼
+Linux kernel
+  │
+  ▼
+initramfs
+  │
+  │ обнаружение и активация LVM
+  ▼
+Root filesystem
+  │
+  ▼
+запуск системы
+```
+
+Если в GRUB останется старое имя VG, ядро получит устаревший параметр `rd.lvm.lv`, даже если `initramfs` уже пересобран.
+
+В результате загрузка может остановиться в `dracut`, поскольку система не сможет найти указанный LVM-том.
+
+---
+
