@@ -186,12 +186,54 @@ passwd root
 touch /.autorelabel
 ```
 
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/436253bc-037e-4971-be6e-b1295853ae6c" />
+
 При следующей загрузке система выполнит переиндексацию SELinux-контекстов.
 
-После этого можно перезагрузить систему:
-
-<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/5daad7d9-fe36-4291-b946-016156cbe8f9" />
-
-и войти с новым паролем.
+Можно перезагрузить систему.
 
 ---
+
+# Способ 3 — `rw init=/sysroot/bin/sh`
+
+В строке, начинающейся с `linuxefi`, заменяем:
+
+```text
+ro
+```
+
+на:
+
+```text
+rw init=/sysroot/bin/sh
+```
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/a83ff96d-6212-4efa-93ec-07ddc3dc7549" />
+
+После этого:
+
+```text
+Ctrl + X
+```
+
+В результате корневая файловая система сразу монтируется в режиме **Read-Write**, а в качестве запускаемого процесса используется shell из установленной системы:
+
+```text
+/sysroot/bin/sh
+```
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/b37338b1-32d7-4762-9769-0e9da8d14138" />
+
+Таким образом, этот способ похож на предыдущие варианты, но позволяет сразу получить оболочку с файловой системой в режиме записи.
+
+---
+
+# LVM: переименование Volume Group
+
+Для начала посмотрим текущее состояние LVM:
+
+```bash
+vgs
+```
+
+Пример:
