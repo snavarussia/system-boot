@@ -326,7 +326,7 @@ centos → testing
 
 то ссылки на старое имя необходимо заменить на новое:
 
-<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/5bd3489a-82e7-4bc7-bc8f-c8d343a2bcec" />
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/1ea7720c-0183-489d-9186-6c61d5c1f04f" />
 
 Особое внимание следует обратить на параметры `rd.lvm.lv` в конфигурации GRUB. Например:
 
@@ -388,3 +388,46 @@ Root filesystem
 
 ---
 
+# Добавление собственного модуля в initrd
+
+Модули `dracut` находятся в каталоге:
+
+```text
+/usr/lib/dracut/modules.d/
+```
+
+Создадим собственный модуль:
+
+```bash
+mkdir /usr/lib/dracut/modules.d/testing
+```
+
+В каталоге создаются два скрипта:
+
+```text
+/usr/lib/dracut/modules.d/testing/
+├── module-setup.sh
+└── test.sh
+```
+
+### `module-setup.sh`
+
+Этот скрипт сообщает `dracut`, как установить модуль в `initrd` и какой скрипт необходимо выполнить.
+
+Общая идея:
+
+```text
+module-setup.sh
+        │
+        └── подключает test.sh
+```
+
+<img width="1023" height="768" alt="изображение" src="https://github.com/user-attachments/assets/3194378f-f6d5-4c9e-8a46-62c32d84ba7d" />
+
+### `test.sh`
+
+Это непосредственно выполняемый скрипт.
+
+Он используется для вывода изображения/символов пингвина в терминал во время загрузки.
+
+---
